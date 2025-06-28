@@ -1,0 +1,50 @@
+function [w_grad] = grad_w(Lab,F,f,x,w_old,L,J,C_l,gamma_D,gamma_E,theta,v)
+%GRAD_W The calculation of the gradient of the weight parameter w.
+%   F: (L_j+U_j)*(\sum_{K_m}) matrix, K_m : number of class in one
+%  dimension
+%   f: (L_j+U_j)*(\sum_{K_m}) matrix output of discriminant function
+%   x: (L_j+U_j)*D training data
+%   w: (\sum_{K_m})*D matrix, model parameter
+
+[N,KK]=size(F);
+D=size(w_old,2);
+% Q=size(Lab,2);
+w_grad=zeros(KK,D);
+% U=N-L;
+for k=1:KK
+    for n=1:L
+        w_grad(k,:)=w_grad(k,:)-(C_l/(J*L))*(F(n,k)-f(n,k))*x(n,:);
+    end
+end
+
+% for k=1:KK
+%     for n=L+1:N
+%         w_grad(k,:)=w_grad(k,:)-(C_u/(J*U))*(F(n,k)-f(n,k))*x(n,:);
+%     end
+% end
+
+w_grad=w_grad+gamma_E*w_old;
+for k=1:KK
+%     for n=1:L
+        w_grad(k,:)=w_grad(k,:)+(gamma_D/(J*N))*(w_old(k,:)-(theta*v(k,:)')');
+%     end
+end
+
+
+% grad_inf=zeros(KK,D); %%% the gradient of the mutual information 
+% p=zeros(N,KK);
+% p_c=zeros(C,KK);
+% for q=1:Q
+% %     p_mid=zeros(N,Lab(q));
+%     w_mid=w_old(sum(Lab(1:q-1))+1:sum(Lab(1:q)),: );
+%     p_mid=reg_fun(w_mid,x);
+%     p_c_mid=reg_fun(w_mid,x_c);
+%     grad_inf(sum(Lab(1:q-1))+1:sum(Lab(1:q)),:) = mut_inf(p_mid,p_c_mid,x,x_c);
+% %     p(:,sum(Lab(1:q-1))+1:sum(Lab(1:q)))=p_mid;
+% %     p_c(:,sum(Lab(1:q-1))+1:sum(Lab(1:q)))=p_c_mid;
+% end
+% w_grad=w_grad-(gamma_D/(J*N))*grad_inf;
+% p = reg_fun(w,x);
+% p_c= reg_fun(w,x_c);
+end
+
