@@ -1,0 +1,51 @@
+function [F_new] = cred_label(F_confidence,Y_part,epsilon,L)
+%CRED_LABEL 此处显示有关此函数的摘要
+%   F_confidence:
+N_j=size(Y_part,1);
+K=size(Y_part,2);
+J=size(Y_part,3);
+%% 可信标签
+F_new=zeros(N_j,K,J);
+for j=1:J
+    for n=1:L
+        for k=1:K
+            if Y_part==0
+                F_new(n,k,j)=F_confidence(n,k,j);
+            else
+                F_new(n,k,j)=(1-epsilon)*F_confidence(n,k,j)+epsilon*Y_part(n,k,j);
+            end
+        end
+    end
+    for n=L+1:N_j
+        for k=1:K
+%             if Y_part==0
+                F_new(n,k,j)=F_confidence(n,k,j);
+%             else
+%                 F_new(n,k,j)=(1-epsilon)*F_confidence(n,k,j)+epsilon*Y_part(n,k,j);
+%             end
+        end
+    end
+end
+% for j=1:J
+%     for n=1:N_j
+%         for k=1:K
+%             % 若候选标签为1，且标签的置信度大于阈值，则认为其是可信标签
+%             if Y_part(n,k,j)==1
+%                 if F_confidence(n,k,j)>=epsilon
+%                     Y_cred(n,k,j)=1;
+%                     
+%                 end
+%             end
+%         end
+%         % 若没有任何候选标签的置信度大于阈值，则令置信度最大的候选标签为可信标签
+%         if sum(Y_cred(n,:,j))==0
+%             ii=find(Y_part(n,:,j));
+%             part_lab=Y_part(n,ii,j);
+%             [~,inx]=max(Y_cred(ii));
+%             jj=ii(inx);
+%             Y_cred(n,jj,j)=1;
+%         end
+%     end
+% end
+end
+
