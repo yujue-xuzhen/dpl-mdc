@@ -1,0 +1,34 @@
+function [Y_pred] = weight_vote(X,Center,Center_label)
+%UNTITLED2 此处显示有关此函数的摘要
+%  X: data  N_j*D*J matrix
+%  N_j: number of data sample in node j,  C: number of center  
+%  K: number of class
+%
+[N_j,D,J]=size(X);
+C=size(Center,1);
+K=size(Center_label,2);
+
+%% using the eulidean distance to measure the similarity between cluster center and unlabeled data
+Distance=zeros(N_j,C,J);
+
+Y_pred=zeros(N_j,K,J);
+for j=1:J
+    for n=1:N_j
+        for m=1:C
+            %% 计算数据与聚类中心之间的距离
+            Distance(n,m,j)=exp(-(norm(X(n,:,j)-Center(m,:,j)).^2)/0.1);
+        end
+    end
+    for n=1:N_j
+        %% 距离归一化
+        Distance_sum=sum(Distance(n,:,j));
+        Distance(n,:,j)=(1/Distance_sum)*Distance(n,:,j);
+    end
+%% calculate the predict label of unlabeled data    
+    for n=1:N_j
+        for k=1:K
+            Y_pred(n,k,j)=Distance(n,:,j)*Center_label(:,k,j);
+        end
+    end
+end
+end
