@@ -1,0 +1,41 @@
+function [f_grad] = grad_F(Lab,F,F_c,S,y,f,J,L,gamma_A,gamma_B,gamma_C)
+%GRAD_F 此处显示有关此函数的摘要
+%   Lab 1*Q vector, each entry denotes the number of class in each
+%   dimension of label space
+%   F: (L_j+U_j)*(\sum_{K_m}) matrix, K_m : number of class in one
+%   dimension
+%   F_c: C*(\sum_{k_m}) matrix
+%   S: (L_j+U_j)*C matrix
+%   f: (L_j+U_j)*(\sum_{K_m}) matrix output of discriminant function
+%   LL: (\sum_{K_m})*(\sum_{K_m}) matrix measuring the label relationship
+Q=size(Lab,2);
+[N,KK]=size(F);
+U=N-L;
+% C=size(F_c);
+f_grad=zeros(N,KK);
+
+Omega=ones(L,KK);
+for n=1:L
+    for k=1:KK
+        if y(n,k)==0
+            Omega(n,k)=0;
+        end
+    end
+end
+
+f_grad=f_grad+(gamma_B/(J*N))*(F-S*F_c);
+for n=1:L
+    f_grad(n,:)=f_grad(n,:)+(gamma_A/(J*L))*Omega(n,:).*(F(n,:)-y(n,:));
+end
+
+
+
+for n=1:L
+    f_grad(n,:)=f_grad(n,:)+(gamma_C/(J*L))*(F(n,:)-f(n,:));
+end
+% for n=L+1:L+U
+%     f_grad(n,:)=f_grad(n,:)+(C_u/(J*U))*(F(n,:)-f(n,:));
+% end
+
+end
+
