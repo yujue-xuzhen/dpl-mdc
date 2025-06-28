@@ -1,0 +1,17 @@
+function [ w_new ] = diff_coop( w,C )
+%DIFF_COOP 此处显示有关此函数的摘要
+%   此处显示详细说明
+%   diff_coop: 对权值向量进行融合。
+%   w: weight term, d*M*J matrix, d:dimension, M:the number of labels
+%   J: the number of nodes
+%   C: cooperatative coefficient, J*J matrix
+
+[d,M,J] = size(w);
+
+w_new = zeros(d,M,J);
+for j = 1:J
+    for jj = 1:J
+        w_new(:,:,j)=w_new(:,:,j)+C(j,jj)*w(:,:,jj);
+    end
+end
+
