@@ -1,0 +1,19 @@
+function [D] = distance(X,Center,sigma)
+%DISTANCE calculate the distance between the training data and center data
+%  measure the similarity of data and center
+%  X: (L_j+U_j)*D  training data 
+%  Center: C*D center data
+%  sigma: kernel width 0.1, 0.01
+
+N=size(X,1);
+C=size(Center,1);
+D=zeros(N,C);
+
+for n=1:N
+    for c=1:C
+        D(n,c)=exp(-(norm(X(n,:)-Center(c,:)).^2)/sigma);
+    end
+end
+
+end
+
