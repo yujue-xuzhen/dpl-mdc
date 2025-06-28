@@ -1,0 +1,16 @@
+function [f] = discri_fun(x,w)
+%DISCRI_FUN discriminant function
+%   x: (L_j+U_j)*D  training data 
+%   w: (\sum_{K_m})*D weight vector
+%   f: (L_j+U_j)*(\sum_{K_m}) discriminant function over all the training
+%   data for all the classes.
+
+N=size(x,1);
+KK=size(w,1);
+f=zeros(N,KK);
+for n=1:N
+    for k=1:KK
+        f(n,k)=w(k,:)*x(n,:)';
+    end
+end
+end
