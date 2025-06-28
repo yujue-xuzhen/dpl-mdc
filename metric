@@ -1,0 +1,58 @@
+function [Ham_score,EMatch,SEMatch] = metric(Y,Y_hat,Lab)
+%METRIC measuring the learning performance of algorithms
+% Hamming Score: the probability of that any class label of one test example is correctly predicted 
+% Exact Match:  the probability of that all q class labels of one test example are correctly predicted 
+% Sub-Exact Match: the probability of that at least q-1 class labels of one test example are correctly predicted 
+% Y: N_t*(\sum_{K_m}) the ground truth label of test data
+% Y_hat: N_t*(\sum_{K_m}) the predicted label of test data
+
+[N_t,K]=size(Y);
+Ham_score=0;
+for n=1:N_t
+    for k=1:K
+        if Y(n,k)~=Y_hat(n,k)
+            Ham_score=Ham_score+1;
+        end
+    end
+end
+Ham_score=Ham_score/(N_t*K);
+
+EMatch=0;
+SEMatch=0;
+
+Q=size(Lab,2);
+y_t=zeros(N_t,Q);
+y_p=zeros(N_t,Q);
+for n=1:N_t
+    for q=1:Q
+        y1=Y(n,sum(Lab(1:q-1))+1:sum(Lab(1:q)));
+        y2=Y_hat(n,sum(Lab(1:q-1))+1:sum(Lab(1:q)));
+        for ll=1:Lab(q)
+            if y1(ll)==1
+                y_t(n,q)=ll;
+            end
+            if y2(ll)==1
+                y_p(n,q)=ll;
+            end
+        end
+    end
+end
+for n=1:N_t
+    ext=0;
+    for q=1:Q
+        if y_t(n,q)==y_p(n,q)
+            ext=ext+1;
+        end
+    end
+    if ext==Q
+        EMatch=EMatch+1;
+    end
+    if ext>=Q-1
+        SEMatch=SEMatch+1;
+    end
+end
+EMatch=EMatch/N_t;
+SEMatch=SEMatch/N_t;
+
+end
+
