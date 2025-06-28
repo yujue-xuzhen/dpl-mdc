@@ -1,0 +1,28 @@
+function [y_predict] = decoding(f_test,y_test,y_code_ovo,num_per_dim,num_ovo_dim,C_per_dim,Q)
+%UNTITLED2 此处显示有关此函数的摘要
+%   此处显示详细说明
+        y_test_code_pre = zeros(size(f_test));
+        y_predict = zeros(size(y_test));
+        N_test=size(f_test,1);
+        num_ovo = sum(num_ovo_dim);
+        for pp=1:N_test
+        for jj=1:num_ovo
+            if f_test(pp,jj)>=0
+                y_test_code_pre(pp,jj) = y_code_ovo(1,jj);
+            else
+                y_test_code_pre(pp,jj) = y_code_ovo(2,jj);
+            end
+        end
+        for dd=1:Q
+            tmp_idx = sum(num_ovo_dim(1:dd-1))+1:sum(num_ovo_dim(1:dd));
+            tmp_y_code = y_test_code_pre(pp,tmp_idx);
+            tmp_cnt = zeros(num_per_dim(dd),1);
+            for jj=1:num_per_dim(dd)
+                tmp_cnt(jj) = sum(tmp_y_code == C_per_dim{dd}(jj));
+            end
+            [p_val,p_pos] = max(tmp_cnt);
+            y_predict(pp,dd) = C_per_dim{dd}(p_pos);
+        end
+        end
+end
+
