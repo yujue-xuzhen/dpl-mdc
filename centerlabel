@@ -1,0 +1,35 @@
+function [Center_label] = centerlabel(X,Y,L,Center,CM)
+%CENTERLABEL 此处显示有关此函数的摘要
+%   此处显示详细说明
+[N_j,K,J]=size(Y);
+C=size(Center,1);
+% K=size(Y,2);
+%% 各个聚类中心在K个类上的置信度 center_label
+Center_label=zeros(C,K,J);
+Distance=zeros(L,C,J);
+for j=1:J
+    for n=1:L
+        for m=1:C
+            %% 计算类中心与数据之间的距离
+            Distance(n,m,j)=exp(-(norm(X(n,:,j)-Center(m,:,j)).^2)/0.1);
+        end
+    end
+    for m=1:C
+        %% 距离归一化
+        Distance_sum=sum(Distance(:,m,j));
+        Distance(:,m,j)=(1/Distance_sum)*Distance(:,m,j);
+    end
+    %%  初始预估聚类中心的标签置信度（仅仅利用本地数据）
+    for m=1:C
+        for k=1:K
+            Center_label(m,k,j)=Distance(:,m,j)'*Y(1:L,k,j);
+        end
+    end
+end
+T=5;
+%% 对本地预估的聚类中心的标签置信度进行节点间的融合
+for t=1:T % number of cooperation per iteration
+    Center_label = coop(Center_label,CM);
+end
+end
+
