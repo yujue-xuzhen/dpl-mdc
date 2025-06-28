@@ -1,0 +1,16 @@
+function [L] = label_correlation(Y_c)
+%LABEL_CORRELATION calculate the label correlation among different classes
+% in all the label space
+%   Y_c: C*(\sum_{K_m}) label of the center
+%   L: label correlation matrix, (\sum_{K_m})*(\sum_{K_m}) matrix
+KK=size(Y_c,2);
+L=zeros(KK,KK);
+
+for k1=1:KK
+    for k2=1:KK
+        L(k1,k2)=Y_c(:,k1)'*Y_c(:,k2);
+    end
+end
+
+end
+
