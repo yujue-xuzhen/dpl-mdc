@@ -1,0 +1,48 @@
+function [L] = ovodecomposition(y)
+%OVODECOMPOSITION 此处显示有关此函数的摘要
+%   y: N*K_m labels of training data, N: number of training data, K_m:
+%   number of class at each dimension
+%   L: N*(K_m,2) transformed labels of training data, (K_m,2): number of
+%   classes via ovo decomposition
+%   
+[N,K]=size(y);
+
+com_K=(1/2)*K*(K-1); %% number of classes via ovo decomposition
+L=zeros(N,com_K); %% binary labels of transformed labels
+for n=1:N
+    for s=1:K
+        if y(n,s)==1
+            lab=s;
+        end
+    end
+%     lab=a(n);
+    if lab<K && lab>=1
+        tmp=0; %% 计算叠加结果\sum_{i=1}^a(i-1)
+        for i=1:lab
+            tmp=tmp+i-1;
+        end
+        floor=(lab-1)*K+1-tmp;
+        tmp=0;%% 计算叠加结果\sum_{i=1}^a(i)
+        for i=1:lab
+            tmp=tmp+i;
+        end
+        upper=lab*K-tmp;
+        for k=floor:upper
+            L(n,k)=1;
+        end
+    end
+    if lab>=2
+        L(n,lab-1)=-1;
+    end
+    if lab>=3
+        for q=0:lab-3
+            k=lab-1;
+            for i=0:q
+                k=k+K-2-i;
+            end
+            L(n,k)=-1;
+        end
+    end
+end
+end
+
