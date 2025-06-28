@@ -1,0 +1,135 @@
+function [ Y_hat ] = EDM( Y_ini,C,r,max_iter,v )
+%EDM 此处显示有关此函数的摘要
+%   此处显示详细说明
+%   EDM: 分布式矩阵完备,完备的矩阵是预测锚节点标签组成的矩阵
+%    
+%   Y_ini: 初始时矩阵（有元素空缺）,N*M*J matrix,
+%   N: the number of anchor points
+%   M: the number of labels
+%   J: the number of nodes
+%   II: 单节点已知元素的集合
+%   C: the cooperatative coefficient matrix
+%   r: the rank of Y_hat
+%   max_iter: the maximum number of iterations
+%
+%   Y_hat=A*B, Y_hat: the predicted labels for anchor points
+%   A: auxiliary matrix, N*r*J matrix, 
+%   B: auxiliary matrix, r*M*J matrix.
+%   Note: 我们设置了old,mid,new,三个变量。（由于算法需要）
+%   _old:用来存储前一个时刻的变量
+%   _mid:一般用于存储融合后的变量或者是本时刻的变量值
+%   _new:用于存储后一个时刻的变量（迭代之后的变量值）
+[N,M,J] = size(Y_ini);
+D = 0.5*(C+eye(J,J));
+A_old = rand(N,r,J); % A和B的初始值都是随机的
+B_old = rand(r,M,J);
+Y_old = Y_ini; % Y的初始值就是各自节点利用kNN确定的估计值
+
+alpha = 0.12; %% the step size for A;
+II = know_ele(Y_ini);
+
+%% 第一步
+A_new = zeros(N,r,J);
+
+A_mid = diff_coop(A_old,C); %% 对A进行融合
+for j = 1:J
+    % 对融合后的A进行初次迭代
+    A_new(:,:,j) = A_mid(:,:,j)-alpha*(A_old(:,:,j)-Y_old(:,:,j)*B_old(:,:,j)');
+    % 求B的值
+    B_mid(:,:,j) = inv(A_new(:,:,j)'*A_new(:,:,j))*A_new(:,:,j)'*Y_old(:,:,j);
+end
+% B的融合
+B_new = diff_coop(B_mid,C);
+
+Y_hat = zeros(N,M,J);
+for j = 1:J
+    Y_hat(:,:,j) = A_new(:,:,j)*B_new(:,:,j)+II(:,:,j).*(Y_ini(:,:,j)-A_new(:,:,j)*B_new(:,:,j));
+end
+Y_hat = normal(Y_hat);
+
+A_mid = A_new;
+B_mid = B_new;
+Y_mid = Y_hat;
+
+%% 后续步骤
+for ii = 1:max_iter
+    A_mid = diff_coop_str(A_mid,A_old,C,D);
+    for j = 1:J
+        % A的迭代方法有修改，与之前不同，把t时刻和t-1时刻同时考虑
+        A_new(:,:,j) = A_new(:,:,j)+A_mid(:,:,j)-alpha*(A_new(:,:,j)-A_old(:,:,j)-Y_hat(:,:,j)*B_new(:,:,j)'+Y_old(:,:,j)*B_old(:,:,j)');
+        B_mid(:,:,j) = inv(A_new(:,:,j)'*A_new(:,:,j))*A_new(:,:,j)'*Y_hat(:,:,j);
+    end
+    B_new = diff_coop(B_mid,C);
+    for j = 1:J
+        Y_hat(:,:,j) = A_new(:,:,j)*B_new(:,:,j)+II(:,:,j).*(Y_ini(:,:,j)-A_new(:,:,j)*B_new(:,:,j));
+    end
+    % old,mid,new三个值的更新
+    A_old = A_mid;
+    B_old = B_mid;
+    Y_old = Y_mid;
+    A_mid = A_new;
+    B_mid = B_new;
+    Y_hat = normal(Y_hat);
+    II = know_ele(Y_ini);
+    II = update_w(II,v,ii,J);
+end
+
+
+function [ II ] = know_ele( Y_ini )
+%% KNOW_ELE 此处显示有关此函数的摘要
+%   此处显示详细说明
+%   know_ele: 获取已知元素的集合
+%   Y_ini: 初始时矩阵（有元素空缺）,N*M*J matrix,
+%   N: the number of anchor points
+%   M: the number of labels
+%   J: the number of nodes
+%   II: 单节点已知元素的集合（元素都是01，0为未知，1为已知）
+
+[N,M,J] = size(Y_ini);
+II = zeros(N,M,J);
+for j = 1:J
+    for a = 1:N
+        for b = 1:M
+            if Y_ini(a,b,j)~=0
+                II(a,b,j)=1;
+            end
+        end
+    end
+end
+
+
+
+function [Y_n]=normal(Y)
+%% 对不符合理论要求的元素进行修正（大于1的赋值为1，小于-1的赋值为-1）
+[N,M,J] = size(Y);
+Y_n = Y;
+for j = 1:J
+    for a = 1:N
+        for b = 1:M
+            if Y(a,b,j)>1
+                Y_n(a,b,j)=1;
+            end
+            if Y(a,b,j)<-1
+                Y_n(a,b,j)=-1;
+            end
+        end
+    end
+end
+
+function [A_n]=diff_coop_str(A,A_old,C,D)
+%% 加强版的融合策略，加入老的矩阵 A_old,（D=(1/2)*(C+I)）
+[N,M,J] = size(A);
+A_n = zeros(N,M,J);
+for j = 1:J
+    for jj = 1:J
+        A_n(:,:,j) = A_n(:,:,j)+C(j,jj)*A(:,:,jj)-D(j,jj)*A_old(:,:,jj);
+    end
+end
+
+function [II_n] = update_w(II,v,ii,J)
+%% 对已知元素估计值的权值进行更新
+%%% (此处设置为指数下降，每迭代一次，估计值的权重都会上升，而初始赋值部分的权重都会下降)
+II_n = II;
+for j = 1:J
+    II_n(:,:,j) = exp(-v*ii)*II(:,:,j);
+end
