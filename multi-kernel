@@ -1,0 +1,13 @@
+function [data_feature_map] = multi_kernel(X,sigma,D_non,P)
+%MULTI_KERNEL 此处显示有关此函数的摘要
+%   data.X: N*D matrix, N: number of data, D: dimension of data
+%   sigma: kernel width       D_non: dimension of feature map
+N=size(X,1);
+data_feature_map=zeros(N,D_non*P);
+for p=1:P
+    for n=1:N
+        data_feature_map(n,(p-1)*D_non+1:p*D_non)=feature_map_gaussian(X(n,:),D_non,sigma(p));
+    end
+end
+end
+
