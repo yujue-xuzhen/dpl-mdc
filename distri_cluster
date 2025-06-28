@@ -1,0 +1,112 @@
+function [Center] = distri_cluster(X,iteration_out,iteration_inner,C,threshold)
+%distributed clustering method
+%% data: N*D training data  J: number of nodes  iteration_out: maximum iteration of outer-loop
+%%% iteration_inner: maximum iteration of inner-loop  C: initial number of
+%%% cluster center  threshold: maximum number of training data per cluster
+% [data.X] = data_distri(data.X,J);
+% N_j=N/J;
+N_j=size(X,1);
+D=size(X,2);
+J=size(X,3);
+Center=rand(C,D,J); % 类中心
+Class=zeros(N_j,1,J); % data belong to class xx  每个数据属于哪个类
+Number_Class=zeros(C,1,J); % number of data for class xx 每个类的数据数量
+
+%% outer loop
+% iteration=10;
+for i=1:iteration_out
+    
+    %% inner loop per node (k-means)
+    T=1;
+    
+    for t=1:T
+        for j=1:J
+            for n=1:N_j
+                %% 计算数据与类中心的距离
+                Distance=zeros(C,1,J);
+                for c=1:C
+                    Distance(c,:,j)=norm(X(n,:,j)-Center(c,:,j));
+                end
+                %% 距离排序，令距离最小的类别为预测类别
+                [~,index]=sort(Distance(:,:,j));
+                Class(n,:,j)=index(1);
+            end
+            %% 更新类中心
+            for c=1:C
+                %% 获取属于某类别的数据
+                ii=find(Class(:,:,j)==c);
+                %% 类中心更新
+                Center(c,:,j)=mean(X(ii,:,j));
+                for d=1:D
+                if isnan(Center(c,d,j)) %% 防止出现某一类没数据
+                    Center(c,d,j)=0;
+                end
+                end
+                Number_Class(c,:,j)=length(ii); %% 某一个类别保有的数据量
+            end
+            
+        end
+    end
+    %% cooperation among neighboring nodes
+    load comb.mat
+% CM=eye(J);
+%     T2=10;
+    
+%     mu=exp(-i/100);
+        %%  计算中间变量
+    sum_center=zeros(C,D,J);
+    sum_number=Number_Class;
+    for j=1:J
+        for c=1:C
+            sum_center(c,:,j)=Center(c,:,j)*sum_number(c,:,j);
+        end
+    end
+    
+    for t=1:iteration_inner
+    sum_center_mid=zeros(C,D,J);
+    sum_number_mid=zeros(C,1,J);
+    for j=1:J
+        for jj=1:J
+%             if SW(j,jj)==1
+                for c=1:C
+                    %% 中间变量
+                    sum_center_mid(c,:,j)=sum_center_mid(c,:,j)+CM(j,jj)*sum_center(c,:,jj);
+                    sum_number_mid(c,:,j)=sum_number_mid(c,:,j)+CM(j,jj)*sum_number(c,:,jj);
+                end
+%             end
+        end
+    end
+    sum_center=sum_center_mid;
+    %% 各类别数据量的平均值
+    sum_number=sum_number_mid;
+    end
+    %% 再更新类中心
+    for j=1:J
+        for c=1:C
+            Center(c,:,j)=sum_center(c,:,j)/sum_number(c,:,j);
+            for d=1:D
+            if isnan(Center(c,d,j)) %% 防止出现某一类没数据
+                    Center(c,d,j)=0;
+            end
+            end
+        end
+    end
+    %% whether larger than threshold
+%     threshold=12;
+%     for c=1:C
+%         new_add_center=zeros(1,D,J);
+%         %% 若类中数据量超过阈值，新增了一个类中心；否则不增加
+%     if sum_number(c,1,1)>threshold % 注意：sum_number是已经融合过后的属于某聚类类别的数据数量
+%         %% 专门去拆分数据量大的类别
+%        ii=find(Class(:,:,j)==c);
+%        for j=1:J
+%            new_add_center(:,:,j)=X(ii(1),:,j);
+%        end
+%        Center=[Center;new_add_center];
+%     end
+%     end
+%     C=size(Center,1);
+end
+
+end
+
