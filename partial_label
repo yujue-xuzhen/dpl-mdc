@@ -1,0 +1,32 @@
+function [Y_out] = partial_label(Y,s)
+%Y:original label matrix  Y_out:partial label matrix
+%s: number of candidate label 
+%   此处显示详细说明
+[N,K]=size(Y); %% number of data, number of label
+fal_pos_lab=0;
+for n=1:N
+%     truth_lab=1;
+%     cand_lab=truth_lab;
+%     ii=find(data.Y(n,:)==1);
+%     truth_inx=1:K;
+%     truth_inx(ii)=[];
+%     perm=randperm(size(truth_inx,2));
+%     if cand_lab<s
+%         data.Y(n,perm(1:s-cand_lab))=1;
+%     end
+    %% 随机分配若干假阳标签
+        perm = randperm(K);
+        for i=1:K
+            if fal_pos_lab<s
+            if Y(n,perm(i))~=1
+                Y(n,perm(i))=1;
+                fal_pos_lab=fal_pos_lab+1;
+            end
+            end
+        end
+    
+    
+    
+end
+Y_out=Y;
+end
