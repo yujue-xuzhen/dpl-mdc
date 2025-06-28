@@ -1,0 +1,41 @@
+function [y_train_ovo,y_code_ovo,num_per_dim,num_ovo_dim,C_per_dim] = labeldecomposition(y_train,Q)
+%LABELDECOMPOSITION 此处显示有关此函数的摘要
+%   此处显示详细说明
+
+C_per_dim = cell(Q,1);%class labels in each dimension
+num_per_dim = zeros(Q,1);%number of class labels in each dimension
+
+% load data_edm.mat;
+num_training=size(y_train,1);
+% y_train=data.Y;
+    for dd=1:Q
+        temp = y_train(:,dd);
+        C_per_dim{dd} = unique(temp);
+        num_per_dim(dd) = length(C_per_dim{dd});
+    end
+
+num_ovo_dim = num_per_dim.*(num_per_dim-1)/2;
+    num_ovo = sum(num_ovo_dim);%i.e., $\ell$ in our paper
+    y_train_ovo = zeros(num_training,num_ovo);%i.e., the matrix $\bf L$ in our paper
+    y_code_ovo = zeros(2,num_ovo);
+    y_code_dim_idx = zeros(1,num_ovo);
+    cnt_ovo = 1;
+    for dd=1:Q
+        for a1=1:num_per_dim(dd)-1
+            label_p = C_per_dim{dd}(a1);
+            for a2=a1+1:num_per_dim(dd)
+                label_n = C_per_dim{dd}(a2);
+                tmp_y = zeros(num_training,1);
+                tmp_y(y_train(:,dd)==label_p) = +1;
+                tmp_y(y_train(:,dd)==label_n) = -1;
+                y_train_ovo(:,cnt_ovo) = tmp_y;
+                %save OvO code table
+                y_code_ovo(1,cnt_ovo) = label_p;
+                y_code_ovo(2,cnt_ovo) = label_n;
+                y_code_dim_idx(cnt_ovo) = dd;
+                cnt_ovo = cnt_ovo + 1;
+            end
+        end
+    end
+end
+
