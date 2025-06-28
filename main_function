@@ -1,0 +1,233 @@
+clear all; clc; close all;
+D=2;
+N=1540; % number of data
+Q=2; %% number of dimension space
+Lab=[3,3];
+load data_edm.mat;
+
+% Q=2;
+
+
+% data.Y=gnd;
+% data.X=rand(N,D); 
+tar=-ones(N,sum(Lab)); %% ground-truth class label
+
+% transform of the label information
+for q=1:Q
+    data.Y_im=tar(:,sum(Lab(1:q-1))+1:sum(Lab(1:q)) ); %% labels in each dimension
+    for n=1:N
+        data.Y_im(n,target(n,q))=1;
+    end
+    tar(:,sum(Lab(1:q-1))+1:sum(Lab(1:q)))=data.Y_im;
+end
+
+U=30;
+% data.X=fea;
+
+N_test=140;
+for uu=1:U
+N=1540;  
+
+[data.X,data.Y,data.X_test,data.Y_test]=test_data(fea,target,N_test);
+N=N-N_test;
+[y_train_ovo,y_code_ovo,num_per_dim,num_ovo_dim,C_per_dim] = labeldecomposition(data.Y,Q);
+% C_per_dim = cell(Q,1);%class labels in each dimension
+% num_per_dim = zeros(Q,1);%number of class labels in each dimension
+% 
+% % load data_edm.mat;
+% num_training=size(data.X,1);
+% y_train=data.Y;
+%     for dd=1:Q
+%         temp = y_train(:,dd);
+%         C_per_dim{dd} = unique(temp);
+%         num_per_dim(dd) = length(C_per_dim{dd});
+%     end
+% 
+% num_ovo_dim = num_per_dim.*(num_per_dim-1)/2;
+%     num_ovo = sum(num_ovo_dim);%i.e., $\ell$ in our paper
+%     y_train_ovo = zeros(N,num_ovo);%i.e., the matrix $\bf L$ in our paper
+%     y_code_ovo = zeros(2,num_ovo);
+%     y_code_dim_idx = zeros(1,num_ovo);
+%     cnt_ovo = 1;
+%     for dd=1:Q
+%         for a1=1:num_per_dim(dd)-1
+%             label_p = C_per_dim{dd}(a1);
+%             for a2=a1+1:num_per_dim(dd)
+%                 label_n = C_per_dim{dd}(a2);
+%                 tmp_y = zeros(N,1);
+%                 tmp_y(y_train(:,dd)==label_p) = +1;
+%                 tmp_y(y_train(:,dd)==label_n) = -1;
+%                 y_train_ovo(:,cnt_ovo) = tmp_y;
+%                 %save OvO code table
+%                 y_code_ovo(1,cnt_ovo) = label_p;
+%                 y_code_ovo(2,cnt_ovo) = label_n;
+%                 y_code_dim_idx(cnt_ovo) = dd;
+%                 cnt_ovo = cnt_ovo + 1;
+%             end
+%         end
+%     end
+% data.Y=y_train_ovo;
+data.Y_trans=[];
+for q=1:Q
+    data.Y_in=data.Y(:,q);
+    data.Y_med=zeros(N,Lab(q));
+    for n=1:N
+%         a=;
+        data.Y_med(n,data.Y_in(n))=1;
+    end
+    P_par=0.1;
+    s=1;
+    for n=1:N
+        z=rand(1,1); %%  intermediate variable 
+        if z<P_par
+            data.Y_med(n,:)=partial_label(data.Y_med(n,:),s);
+        end
+    end
+    data.Y_L=ovodecomposition(data.Y_med);
+    data.Y_trans=[data.Y_trans,data.Y_L];
+end
+data.Y=data.Y_trans;
+%% adding the false positive label into candidate label set
+data.Y_part=data.Y;
+ %% proportion of partial label data %% number of false positive label
+% for q=1:Q
+%     data.Y_im=data.Y(:,sum(Lab(1:q-1))+1:sum(Lab(1:q))); %% labels in each dimension
+% %     for n=1:N
+% %         z=rand(1,1); %%  intermediate variable 
+% %         if z<P_par
+% %             data.Y_im(n,:)=partial_label(data.Y_im(n,:),s);
+% %         end
+% %     end
+%     data.Y_part(:,sum(Lab(1:q-1))+1:sum(Lab(1:q)))=data.Y_im;
+% end
+
+
+%% data distribution
+J=10; %% number of node
+N_j=N/J;
+[data.X,data.Y,data.Y_part]=data_distri(data.X,data.Y,data.Y_part,J);
+L=28;
+% data.Y_part_ini=zeros(L,sum(Lab),J);
+
+% for j=1:J
+%     data.Y_part_ini(:,:,j)=data.Y_part(1:L,:,j);
+% end
+%% data clustering
+iteration_out=10;
+iteration_inner=10;
+threshold=12; 
+C=10; % initial number of cluster class
+[Center] = distri_cluster(data.X,iteration_out,iteration_inner,C,threshold);
+%% labeling confidence estimation
+load comb.mat;
+[Center_label] = centerlabel(data.X,data.Y_part,L,Center,CM); %% labeling for cluster center
+[data.Confid] = weight_vote(data.X,Center,Center_label); %% labeling confidence of training data
+epsilon=0.8; %% weight of Y_part;
+[data.Confid] = cred_label(data.Confid,data.Y_part,epsilon,L);
+Center_label=EDM( Center_label,CM,10,20,0.01 );
+%% random feature mapping
+P=3;
+D_non=400;
+% sigma=1;
+sigma=[0.5,3,10];
+data.X_non=zeros(N_j,D_non*P,J);
+data.X_test_non=zeros(N_test,D_non*P);
+for j=1:J
+    data.X_non(:,:,j)=multi_kernel(data.X(:,:,j),sigma,D_non,P);
+end
+data.X_test_non=multi_kernel(data.X_test,sigma,D_non,P);
+Center_non=zeros(C,D_non*P,J);
+for j=1:J
+    Center_non(:,:,j)=multi_kernel(Center(:,:,j),sigma,D_non,P);
+end
+%% label correlation
+% LL=label_correlation(Center_label); %% L: label correlation
+%% similarity structure 
+S=zeros(N_j,C,J);
+for j=1:J
+    S(:,:,j) = distance(data.X(:,:,j),Center(:,:,j),0.01);
+end
+%% parameter initialization
+iteration=500;
+para.gamma_A=0.1;
+para.gamma_B=0.1;
+para.gamma_C=0.1;
+para.gamma_D=0.001;
+para.gamma_E=0.01;
+para.C_l=20;
+% para.C_u=0.01;
+
+KK=size(y_train_ovo,2);
+f=zeros(N_j,KK,J); %% output of discriminant function
+f_test=zeros(N_test,KK,J);
+w=zeros(KK,D_non*P,J);
+h=20;
+theta=zeros(D_non*P,h,J);
+%% training processing
+for ii=1:iteration
+    disp(['run ', num2str(ii),'/',num2str(iteration),'/',num2str(uu),'/',num2str(U)]);
+    mu_1=0.025;
+    mu_2=0.25;
+    for j=1:J
+        v(:,:,j) = update_v(theta(:,:,j),w(:,:,j));
+    end
+    %% update of label confidence of training data F (Lab,F,F_c,S,y,f,J,L,gamma_A,gamma_B,gamma_C)
+    for j=1:J
+        f(:,:,j)=discri_fun(data.X_non(:,:,j),w(:,:,j));
+        f_grad(:,:,j) = grad_F(Lab,data.Confid(:,:,j),Center_label(:,:,j),S(:,:,j),data.Y_part(:,:,j),f(:,:,j),J,L,para.gamma_A,para.gamma_B,0.1*para.C_l);
+        f(:,:,j)=f(:,:,j)-mu_1*f_grad(:,:,j);
+    end
+    %% update of model parameter w
+    for j=1:J
+        w_grad(:,:,j) = grad_w(Lab,data.Confid(:,:,j),f(:,:,j),data.X_non(:,:,j),w(:,:,j),L,J,para.C_l,para.gamma_D,para.gamma_E,theta(:,:,j),v(:,:,j));
+        w(:,:,j)=w(:,:,j)-mu_2*w_grad(:,:,j);
+    end
+%     CM=(1/J)*ones(J,J);
+    w=coop(w,CM);
+    Z=zeros(D_non*P,D_non*P,J);
+    for j=1:J
+        for k=1:KK
+            Z(:,:,j)=Z(:,:,j)+(1/J)*w(k,:,j)'*w(k,:,j);
+        end
+    end
+    for j=1:J
+%         theta(:,:,j)=update_theta(Z(:,:,j),h)';
+    end
+    %% calculation of output of discriminant function for testing data
+    data.Y_test_hat=zeros(N_test,KK,J);
+    for j=1:J
+        f_test=discri_fun(data.X_test_non,w(:,:,j));
+        y_predict= decoding(f_test,data.Y_test,y_code_ovo,num_per_dim,num_ovo_dim,C_per_dim,Q);
+%         y_test_code_pre = zeros(size(f_test));
+%         y_predict = zeros(size(data.Y_test));
+%         for pp=1:N_test
+%         for jj=1:num_ovo
+%             if f_test(pp,jj)>=0
+%                 y_test_code_pre(pp,jj) = y_code_ovo(1,jj);
+%             else
+%                 y_test_code_pre(pp,jj) = y_code_ovo(2,jj);
+%             end
+%         end
+%         for dd=1:Q
+%             tmp_idx = sum(num_ovo_dim(1:dd-1))+1:sum(num_ovo_dim(1:dd));
+%             tmp_y_code = y_test_code_pre(pp,tmp_idx);
+%             tmp_cnt = zeros(num_per_dim(dd),1);
+%             for jj=1:num_per_dim(dd)
+%                 tmp_cnt(jj) = sum(tmp_y_code == C_per_dim{dd}(jj));
+%             end
+%             [p_val,p_pos] = max(tmp_cnt);
+%             y_predict(pp,dd) = C_per_dim{dd}(p_pos);
+%         end
+%         end
+
+     HS(j) = sum(sum(y_predict==data.Y_test))/(size(data.Y_test,1)*size(data.Y_test,2));
+    %Exact Match(or Example Accuracy or Subset Accuracy)
+    EM(j) = sum(sum((y_predict==data.Y_test),2)==size(data.Y_test,2))/size(data.Y_test,1);
+    %Sub-ExactMatch
+    SEM(j) = sum(sum((y_predict==data.Y_test),2)>=(size(data.Y_test,2)-1))/size(data.Y_test,1);
+    end
+    Ham_score(ii,uu)=1-mean(HS);
+    Exact_Match(ii,uu)=mean(EM);
+    Semi_Exact_Match(ii,uu)=mean(SEM);
+end
+end
