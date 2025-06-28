@@ -1,0 +1,26 @@
+function [X_out,Y_out,Z_out] = data_distri(X,Y,Z,J)
+%DATA_DISTRI 此处显示有关此函数的摘要
+% X:data samples, N*D matrix: number of data, dimension of data
+% Y:data labels, N*K matrix: number of data, number of label
+% J:number of node
+%   此处显示详细说明
+[N,D]=size(X);
+K=size(Y,2);
+perm=randperm(N);
+X=X(perm,:);
+Y=Y(perm,:);
+Z=Z(perm,:);
+
+N_j=N/J;
+X_out=zeros(N_j,D,J);
+Y_out=zeros(N_j,K,J);
+Z_out=zeros(N_j,K,J);
+for j=1:J
+    X_out(:,:,j)=X((j-1)*N_j+1:j*N_j,:);
+    Y_out(:,:,j)=Y((j-1)*N_j+1:j*N_j,:);
+    Z_out(:,:,j)=Z((j-1)*N_j+1:j*N_j,:);
+end
+
+
+end
+
