@@ -1,0 +1,6 @@
+function [v] = update_v(theta,w)
+%UPDATE_V theta: r*d matrix, w: d*1 vector, u: d*1 vector, w: r*1 vector
+% w=u+theta^T*v;
+
+v=w*theta;
+end
