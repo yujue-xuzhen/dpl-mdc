@@ -1,0 +1,16 @@
+function [w_new] = coop(w,CM)
+%COOP 此处显示有关此函数的摘要
+%   此处显示详细说明
+% w_new, w:predict result for selected center, N*D*J matrix
+% c: cooperative coefficient matrix, J*J matrix,   J: number of nodes
+[N,D,J]=size(w);
+w_new=zeros(N,D,J);
+for j=1:J
+    for jj=1:J
+        for n=1:N
+            w_new(n,:,j)=w_new(n,:,j)+CM(j,jj)*w(n,:,jj);
+        end
+    end
+end
+end
+
