@@ -1,0 +1,10 @@
+function [X_tr,Y_tr,X_test,Y_test] = test_data(X,Y,N_test)
+%将数据分成训练数据和测试数据
+%   此处显示详细说明
+N=size(X,1);
+perm=randperm(N);
+X_test=X(perm(1:N_test),:);
+Y_test=Y(perm(1:N_test),:);
+X_tr=X(perm(N_test+1:end),:);
+Y_tr=Y(perm(N_test+1:end),:);
+end
