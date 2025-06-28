@@ -1,0 +1,14 @@
+function [theta] = update_theta(S,r)
+%UNTITLED2 此处显示有关此函数的摘要
+%   w: d*\sum_{m=1}(K_m,2) vector, r: dimension of subspace
+% [d,K,J]=size(w);
+% Z=zeros(d,d,J);
+% for j=1:J
+% for k=1:K
+%     Z(:,:,j)=Z(:,:,j)+(1/(J*xi(k)))w(:,k,j)*w(:,k,j)';
+% end
+% end
+% Z=coop(Z);
+[V,D]=eig(S);
+theta=V(:,1:r)';
+end
