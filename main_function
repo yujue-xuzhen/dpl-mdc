@@ -3,7 +3,7 @@ D=2;
 N=1540; % number of data
 Q=2; %% number of dimension space
 Lab=[3,3];
-load data_edm.mat;
+load data.mat;
 
 % Q=2;
 
